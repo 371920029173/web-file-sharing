@@ -91,6 +91,10 @@ export default function AdminPage() {
         setUsers(usersData.data || [])
         setFiles(filesData.data || [])
         setAnnouncements(announcementsData.data || [])
+        
+        // 调试信息
+        console.log('管理后台获取的文件:', filesData.data)
+        console.log('待审核文件数量:', filesData.data?.filter(f => !f.is_approved).length || 0)
       } else if (user?.is_moderator) {
         // 审核员只能查看文件
         const { data: filesData } = await supabase
@@ -211,7 +215,7 @@ export default function AdminPage() {
 
   if (!user || (!user.is_admin && !user.is_moderator)) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <Navbar />
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">访问被拒绝</h1>
@@ -223,7 +227,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <Navbar />
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -233,10 +237,10 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">管理后台</h1>
           <p className="text-gray-600">
@@ -329,7 +333,7 @@ export default function AdminPage() {
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       用户信息
@@ -345,7 +349,7 @@ export default function AdminPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white/60 backdrop-blur-sm divide-y divide-gray-200">
                   {filteredUsers.map((userItem) => (
                     <tr key={userItem.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -441,6 +445,13 @@ export default function AdminPage() {
                     </div>
                     <div className="flex space-x-2">
                       <button
+                        onClick={() => window.open(`/file/${file.id}`, '_blank')}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors flex items-center"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        预览
+                      </button>
+                      <button
                         onClick={() => handleFileApproval(file.id, true)}
                         className="btn-primary flex items-center"
                       >
@@ -481,7 +492,7 @@ export default function AdminPage() {
             
             {/* 发布公告表单 */}
             {showAnnouncementForm && (
-              <div className="border border-gray-200 rounded-lg p-6 mb-6 bg-gray-50">
+              <div className="border border-gray-200 rounded-lg p-6 mb-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">发布新公告</h3>
                 <div className="space-y-4">
                   <div>

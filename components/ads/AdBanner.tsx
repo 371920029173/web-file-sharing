@@ -34,13 +34,13 @@ export default function AdBanner({ position }: AdBannerProps) {
   const getAdStyles = () => {
     switch (position) {
       case 'top':
-        return 'w-full h-20 bg-gradient-to-r from-blue-100 to-purple-100 border-b border-gray-200'
+        return 'w-full h-20 bg-gradient-to-r from-blue-100 to-purple-100 border-b border-gray-200 relative z-10'
       case 'sidebar':
-        return 'w-full h-64 bg-gradient-to-b from-green-100 to-blue-100 rounded-lg border border-gray-200'
+        return 'w-full h-64 bg-gradient-to-b from-green-100 to-blue-100 rounded-lg border border-gray-200 relative z-10'
       case 'bottom':
-        return 'w-full h-24 bg-gradient-to-r from-pink-100 to-orange-100 border-t border-gray-200'
+        return 'w-full h-24 bg-gradient-to-r from-pink-100 to-orange-100 border-t border-gray-200 relative z-10'
       default:
-        return 'w-full h-20 bg-gray-100'
+        return 'w-full h-20 bg-gray-100 relative z-10'
     }
   }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { FileItem, Comment } from '@/lib/supabase'
+import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
 import { 
   FileText, 
@@ -16,7 +17,9 @@ import {
   Heart, 
   MessageCircle, 
   Download,
-  Eye
+  Eye,
+  Shield,
+  ArrowLeft
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -25,6 +28,7 @@ import toast from 'react-hot-toast'
 export default function FileDetailPage() {
   const params = useParams()
   const fileId = params.id as string
+  const { user, loading: authLoading } = useAuth()
   
   const [file, setFile] = useState<FileItem | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -35,11 +39,11 @@ export default function FileDetailPage() {
   const [loadingContent, setLoadingContent] = useState(false)
 
   useEffect(() => {
-    if (fileId) {
+    if (fileId && !authLoading) {
       fetchFileDetails()
       fetchComments()
     }
-  }, [fileId])
+  }, [fileId, authLoading])
 
   useEffect(() => {
     if (file) {
@@ -60,15 +64,44 @@ export default function FileDetailPage() {
 
   const fetchFileDetails = async () => {
     try {
-      const { data, error } = await supabase
+      // 等待用户信息加载完成
+      if (authLoading) {
+        console.log('等待用户信息加载...')
+        return
+      }
+      
+      // 如果是管理员，可以查看未审核的文件
+      const isAdmin = user?.is_admin || user?.is_moderator
+      
+      console.log('文件查询参数:', {
+        fileId,
+        isAdmin,
+        userId: user?.id,
+        username: user?.username,
+        authLoading
+      })
+      
+      let query = supabase
         .from('files')
         .select('*')
         .eq('id', fileId)
-        .eq('is_public', true)
-        .eq('is_approved', true)
-        .single()
+      
+      // 如果不是管理员，只能查看公开且已审核的文件
+      if (!isAdmin) {
+        query = query.eq('is_public', true).eq('is_approved', true)
+        console.log('普通用户查询条件: is_public=true, is_approved=true')
+      } else {
+        console.log('管理员查询条件: 无限制')
+      }
+      
+      const { data, error } = await query.single()
 
-      if (error) throw error
+      if (error) {
+        console.error('文件查询错误:', error)
+        throw error
+      }
+      
+      console.log('找到文件:', data)
       setFile(data)
     } catch (error) {
       console.error('Error fetching file:', error)
@@ -217,8 +250,8 @@ export default function FileDetailPage() {
               </div>
               <div className="p-6 text-center">
                 <div className="relative inline-block">
-                  <img 
-                    src={file.file_url} 
+            <img 
+              src={file.file_url} 
                     alt={file.original_name}
                     className="max-w-full h-auto rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105"
                     onClick={() => window.open(file.file_url, '_blank')}
@@ -269,14 +302,14 @@ export default function FileDetailPage() {
               </div>
             </div>
             <div className="p-6 text-center">
-              <video 
-                controls 
+            <video 
+              controls 
                 className="max-w-full h-auto rounded-xl shadow-lg"
                 preload="metadata"
-              >
-                <source src={file.file_url} type="video/mp4" />
-                您的浏览器不支持视频播放
-              </video>
+            >
+              <source src={file.file_url} type="video/mp4" />
+              您的浏览器不支持视频播放
+            </video>
               <div className="mt-4 text-sm text-gray-600">
                 <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
                   {formatFileSize(file.file_size)}
@@ -326,14 +359,14 @@ export default function FileDetailPage() {
                     <p className="text-sm text-gray-600">{formatFileSize(file.file_size)}</p>
                   </div>
                 </div>
-                <audio 
-                  controls 
+            <audio 
+              controls 
                   className="w-full"
                   preload="metadata"
-                >
-                  <source src={file.file_url} type="audio/mpeg" />
-                  您的浏览器不支持音频播放
-                </audio>
+            >
+              <source src={file.file_url} type="audio/mpeg" />
+              您的浏览器不支持音频播放
+            </audio>
               </div>
             </div>
           </div>
@@ -341,7 +374,7 @@ export default function FileDetailPage() {
       case 'document':
         // 检查是否是txt文件
         if (file.mime_type?.includes('text/plain')) {
-          return (
+        return (
             <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
               {/* 文件头部 */}
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
@@ -385,7 +418,7 @@ export default function FileDetailPage() {
                     <span className="ml-3 text-gray-600">加载内容中...</span>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -404,7 +437,7 @@ export default function FileDetailPage() {
                     </div>
                     <div className="p-4">
                       <div className="bg-gray-50 rounded-lg p-4 border">
-                        <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto bg-white p-4 rounded border">
+                        <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto bg-white/60 backdrop-blur-sm p-4 rounded border">
                           {fileContent || '文件内容为空'}
                         </pre>
                       </div>
@@ -455,7 +488,7 @@ export default function FileDetailPage() {
                 </div>
               </div>
               <div className="p-8">
-                <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200">
                   <div className="text-center mb-8">
                     <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
                       <FileText className="w-10 h-10 text-white" />
@@ -471,12 +504,12 @@ export default function FileDetailPage() {
                     </div>
                   </div>
                   
-                  {file.description && (
+              {file.description && (
                     <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                       <h3 className="font-semibold text-gray-900 mb-2">文件描述</h3>
-                      <p className="text-gray-700">{file.description}</p>
-                    </div>
-                  )}
+                  <p className="text-gray-700">{file.description}</p>
+                </div>
+              )}
                   
                   <div className="text-center py-8">
                     <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200">
@@ -502,10 +535,10 @@ export default function FileDetailPage() {
                       </div>
                     </div>
                   </div>
-                </div>
               </div>
             </div>
-          )
+          </div>
+        )
         }
       default:
         return (
@@ -538,7 +571,7 @@ export default function FileDetailPage() {
               </div>
             </div>
             <div className="p-8 text-center">
-              <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200">
                 <div className="w-20 h-20 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-6">
                   <File className="w-10 h-10 text-white" />
                 </div>
@@ -568,12 +601,15 @@ export default function FileDetailPage() {
     }
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          <p className="mt-4 text-gray-600 ml-4">
+            {authLoading ? '正在验证用户权限...' : '加载中...'}
+          </p>
         </div>
       </div>
     )
@@ -585,7 +621,32 @@ export default function FileDetailPage() {
         <Navbar />
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">文件不存在</h1>
-          <p className="text-gray-600">该文件可能已被删除或不存在</p>
+          <p className="text-gray-600 mb-4">该文件可能已被删除或不存在</p>
+          <p className="text-sm text-gray-500 mb-4">文件ID: {fileId}</p>
+          <div className="mt-8 flex flex-col items-center space-y-4">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              返回上一页
+            </button>
+            {user?.is_admin && (
+              <div className="p-4 bg-blue-50 rounded-lg max-w-md">
+                <h3 className="font-medium text-blue-900 mb-2">管理员调试信息</h3>
+                <p className="text-sm text-blue-700">
+                  作为管理员，你可以查看所有文件（包括未审核的）。
+                  如果这个文件ID确实存在，可能是权限或查询条件的问题。
+                </p>
+                <button
+                  onClick={() => window.location.href = '/admin'}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  前往管理后台查看文件列表
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -595,48 +656,55 @@ export default function FileDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <Navbar />
       
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* 文件头部信息 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 mb-8 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
-            <div className="flex items-start space-x-4">
+          <div className="flex items-start space-x-4">
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                {getFileTypeIcon(file.file_type)}
+            {getFileTypeIcon(file.file_type)}
               </div>
-              <div className="flex-1">
+            <div className="flex-1">
                 <h1 className="text-3xl font-bold mb-2">{file.original_name}</h1>
                 <div className="flex items-center space-x-6 text-sm text-blue-100 mb-4">
-                  <div className="flex items-center">
-                    <User className="w-4 h-4 mr-2" />
-                    <span>{file.author_name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span>{formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN })}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Eye className="w-4 h-4 mr-2" />
-                    <span>{file.likes_count} 次查看</span>
-                  </div>
+                <div className="flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>{file.author_name}</span>
                 </div>
-                {file.description && (
+                <div className="flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>{formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN })}</span>
+                </div>
+                <div className="flex items-center">
+                  <Eye className="w-4 h-4 mr-2" />
+                  <span>{file.likes_count} 次查看</span>
+                </div>
+                  {/* 审核状态提示 - 仅管理员可见 */}
+                  {user?.is_admin && !file.is_approved && (
+                    <div className="flex items-center bg-yellow-500/20 px-3 py-1 rounded-full">
+                      <Shield className="w-4 h-4 mr-2" />
+                      <span className="text-yellow-200 font-medium">待审核</span>
+                    </div>
+                  )}
+              </div>
+              {file.description && (
                   <p className="text-blue-100 mb-4">{file.description}</p>
-                )}
-                <div className="flex items-center space-x-4">
+              )}
+              <div className="flex items-center space-x-4">
                   <a
                     href={file.file_url}
                     download={file.original_name}
                     className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center"
                   >
-                    <Download className="w-4 h-4 mr-2" />
-                    下载文件
+                  <Download className="w-4 h-4 mr-2" />
+                  下载文件
                   </a>
                   <button className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center">
-                    <Heart className="w-4 h-4 mr-2" />
-                    收藏
-                  </button>
-                </div>
+                  <Heart className="w-4 h-4 mr-2" />
+                  收藏
+                </button>
               </div>
+            </div>
               <div className="text-right text-sm text-blue-100">
                 <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
                   <div className="text-xs opacity-80">文件大小</div>
@@ -656,7 +724,7 @@ export default function FileDetailPage() {
             </h2>
           </div>
           <div className="p-6">
-            {renderFileContent()}
+          {renderFileContent()}
           </div>
         </div>
 
@@ -665,63 +733,63 @@ export default function FileDetailPage() {
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b border-gray-200/50">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <MessageCircle className="w-6 h-6 mr-2 text-blue-500" />
-              评论 ({comments.length})
-            </h2>
+            评论 ({comments.length})
+          </h2>
           </div>
           <div className="p-6">
-            {/* 发表评论 */}
+          {/* 发表评论 */}
             <form onSubmit={handleSubmitComment} className="mb-8">
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="写下你的评论..."
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="写下你的评论..."
                   className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white resize-none"
-                  rows={3}
-                />
+              rows={3}
+            />
                 <div className="mt-3 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={submitting || !newComment.trim()}
+              <button
+                type="submit"
+                disabled={submitting || !newComment.trim()}
                     className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-                  >
-                    {submitting ? '发布中...' : '发布评论'}
-                  </button>
+              >
+                {submitting ? '发布中...' : '发布评论'}
+              </button>
                 </div>
-              </div>
-            </form>
+            </div>
+          </form>
 
-            {/* 评论列表 */}
-            <div className="space-y-4">
-              {comments.length === 0 ? (
+          {/* 评论列表 */}
+          <div className="space-y-4">
+            {comments.length === 0 ? (
                 <div className="text-center py-12">
                   <MessageCircle className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500 text-lg">暂无评论，快来发表第一条评论吧！</p>
                 </div>
-              ) : (
-                comments.map((comment) => (
-                  <div key={comment.id} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-start space-x-3">
+            ) : (
+              comments.map((comment) => (
+                  <div key={comment.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
                         <User className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
+                    </div>
+                    <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
                           <span className="font-semibold text-gray-900">{comment.username}</span>
                           <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
-                          </span>
-                        </div>
-                        <p className="text-gray-700 leading-relaxed">{comment.content}</p>
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
+                        </span>
                       </div>
+                        <p className="text-gray-700 leading-relaxed">{comment.content}</p>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))
+            )}
             </div>
           </div>
         </div>
       </main>
     </div>
   )
-}
+} 

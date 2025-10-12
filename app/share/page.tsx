@@ -253,9 +253,9 @@ export default function SharePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -268,7 +268,7 @@ export default function SharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar />
       
       {/* 编辑文件模态框 */}
@@ -306,7 +306,7 @@ export default function SharePage() {
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={handleCancelEdit}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
               >
                 取消
               </button>
@@ -321,7 +321,7 @@ export default function SharePage() {
         </div>
       )}
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 主要内容 */}
           <div className="lg:col-span-3">
@@ -368,19 +368,19 @@ export default function SharePage() {
                   <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`px-3 py-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                      className={`px-3 py-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'}`}
                     >
                       <Grid className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`px-3 py-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                      className={`px-3 py-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'}`}
                     >
                       <List className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setOnlyMine(v => !v)}
-                      className={`px-3 py-2 flex items-center gap-1 transition-all duration-200 ${onlyMine ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 hover:shadow-sm'}`}
+                      className={`px-3 py-2 flex items-center gap-1 transition-all duration-200 ${onlyMine ? 'bg-green-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 hover:shadow-sm'}`}
                       title="只看我的文件"
                     >
                       <User className="w-4 h-4" />
@@ -496,13 +496,13 @@ export default function SharePage() {
                           </button>
                           <button
                             onClick={() => handleLike(file)}
-                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 hover:scale-105 transition-all duration-200"
+                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 hover:scale-105 transition-all duration-200"
                           >
                             <Heart className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleComment(file)}
-                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 hover:scale-105 transition-all duration-200"
+                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 hover:scale-105 transition-all duration-200"
                           >
                             <MessageSquare className="w-4 h-4" />
                           </button>

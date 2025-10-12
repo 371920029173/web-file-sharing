@@ -112,7 +112,7 @@ export default function FortunePage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-yellow-50">
       <Navbar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 主要内容 */}
           <div className="lg:col-span-3">
@@ -131,7 +131,7 @@ export default function FortunePage() {
             </div>
 
             {/* 占卜类型选择 */}
-            <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200 mb-8">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200 mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">选择占卜类型</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {fortuneTypes.map((type) => (
@@ -178,7 +178,7 @@ export default function FortunePage() {
 
             {/* 占卜结果 */}
             {fortuneResult && (
-              <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200">
                 <div className="text-center">
                   <div className={`w-20 h-20 bg-gradient-to-br ${fortuneResult.color} rounded-full flex items-center justify-center mx-auto mb-6`}>
                     <fortuneResult.icon className="w-10 h-10 text-white" />
@@ -198,7 +198,7 @@ export default function FortunePage() {
             )}
 
             {/* 功能说明 */}
-            <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200 mt-8">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200 mt-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">功能说明</h2>
               <div className="space-y-4 text-gray-600">
                 <p>• <strong>今日运势</strong>：了解今天的整体运势，为一天做好准备</p>
