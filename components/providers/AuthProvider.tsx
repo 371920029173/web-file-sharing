@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-// 注意：不要在客户端引入 supabaseAdmin，避免暴露 service role key
 import { User } from '@/lib/supabase'
 
 // 硬编码的初始管理员用户名，无法被其他管理员修改
@@ -34,10 +33,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Supabase未配置')
       }
 
-      // 使用固定邮箱进行登录
-      const email = `${username}@fileshare.local`
+      // 直接查找用户资料
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single()
+
+      if (profileError || !userProfile) {
+        console.error('用户不存在:', profileError)
+        throw new Error('用户不存在，请先注册')
+      }
+
+      console.log('找到用户资料:', userProfile)
+
+      // 使用用户资料中的邮箱进行登录
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: userProfile.email,
         password: password
       })
 
@@ -51,12 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('登录成功,用户ID:', authData.user.id)
-      const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-      const meJson = await meRes.json()
-      if (!meJson.success) {
-        throw new Error(meJson.error || '无法获取用户资料')
-      }
-      setUser(meJson.data)
+      
+      // 设置用户状态
+      setUser(userProfile)
       setLoading(false)
 
     } catch (error: any) {
@@ -71,38 +80,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
       console.log('开始注册流程,用户名:', username)
-
+      
+      // 检查Supabase连接
       if (!supabase || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
         throw new Error('Supabase未配置')
+      }
+
+      // 检查用户名是否已存在
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', username)
+        .single()
+
+      if (existingUser) {
+        throw new Error('用户名已存在，请选择其他用户名')
       }
 
       // 使用固定的邮箱格式，确保一致性
       const email = `${username}@fileshare.local`
       console.log('使用固定邮箱:', email)
 
-      // 先注册认证账户
-      let { data: authData, error: authError } = await supabase.auth.signUp({
+      // 先创建用户资料
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .insert({
+          username: username,
+          email: email,
+          nickname: username,
+          nickname_color: '#3B82F6',
+          is_admin: username === INITIAL_ADMIN_USERNAME,
+          is_moderator: username === INITIAL_ADMIN_USERNAME,
+          storage_used: 0,
+          storage_limit: username === INITIAL_ADMIN_USERNAME ? 107374182400 : 1073741824
+        })
+        .select()
+        .single()
+
+      if (profileError) {
+        console.error('用户资料创建失败:', profileError)
+        throw new Error('用户资料创建失败')
+      }
+
+      console.log('用户资料创建成功:', profileData)
+
+      // 然后注册认证账户
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
           data: {
             username: username,
+            user_id: profileData.id
           }
         }
       })
 
-      // 如果用户已存在，则尝试直接登录
-      if (authError && authError.message?.toLowerCase().includes('already')) {
-        console.warn('用户已存在，尝试直接登录')
-        const signInRes = await supabase.auth.signInWithPassword({ email, password })
-        if (signInRes.error) {
-          console.error('登录失败:', signInRes.error)
-          throw new Error(`认证账户创建失败: ${authError.message}`)
-        }
-        authData = signInRes.data
-        authError = null as any
-      } else if (authError) {
+      if (authError) {
         console.error('认证账户创建失败:', authError)
+        // 删除已创建的用户资料
+        await supabase.from('users').delete().eq('id', profileData.id)
         throw new Error(`认证账户创建失败: ${authError.message}`)
       }
 
@@ -110,38 +147,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('注册后未返回用户数据')
       }
 
-      // 检查是否已有资料（服务端查询）
-      let finalProfile: any = null
-      {
-        const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-        const meJson = await meRes.json()
-        if (meJson.success) finalProfile = meJson.data
-      }
-
-      if (!finalProfile) {
-        // 然后在服务端创建用户资料
-        const res = await fetch('/api/profile/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: authData.user.id,
-            username,
-            email,
-            isInitialAdmin: username === INITIAL_ADMIN_USERNAME
-          })
-        })
-
-        const result = await res.json()
-        if (!result.success) {
-          console.error('用户资料创建失败:', result.error)
-          throw new Error(`用户资料创建失败: ${result.error}`)
-        }
-        finalProfile = result.data
-      }
-
-      console.log('注册完全成功,用户ID:', finalProfile.id)
-
-      setUser(finalProfile)
+      console.log('注册完全成功,用户ID:', profileData.id)
+      
+      // 设置用户状态
+      setUser(profileData)
       setLoading(false)
 
     } catch (error: any) {
@@ -177,10 +186,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!user?.id) return
       
-      const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': user.id } })
-      const meJson = await meRes.json()
-      if (meJson.success) {
-        setUser(meJson.data)
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (!profileError && userProfile) {
+        setUser(userProfile)
         console.log('用户信息已刷新')
       }
     } catch (error) {
@@ -247,18 +260,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('认证状态变化:', event, session?.user?.id)
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // 用户登录后，从服务端拿资料
-          const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-          const meJson = await meRes.json()
-          if (meJson.success) setUser(meJson.data)
+          // 用户登录
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          
+          if (userProfile) {
+            setUser(userProfile)
+          }
         } else if (event === 'SIGNED_OUT') {
           // 用户登出
           setUser(null)
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
           // Token刷新，重新获取用户信息
-          const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-          const meJson = await meRes.json()
-          if (meJson.success) setUser(meJson.data)
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          
+          if (userProfile) {
+            setUser(userProfile)
+          }
         }
       }
     )
@@ -290,4 +315,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-}
+} 

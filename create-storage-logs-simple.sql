@@ -21,3 +21,7 @@ CREATE INDEX IF NOT EXISTS idx_storage_logs_created_at ON storage_management_log
 UPDATE users 
 SET storage_limit = 32212254720 
 WHERE storage_limit = 0;
+
+
+
+

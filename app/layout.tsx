@@ -67,3 +67,34 @@ export default function RootLayout({
     </html>
   )
 } 
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+          <div className="particle"></div>
+        </div>
+        
+        {/* 粒子物理效果 */}
+        <ParticlePhysics />
+        
+        {/* 鼠标点击特效 */}
+        <MouseTrail />
+        
+        <AuthProvider>
+          {children}
+          <Toaster position="top-right" />
+        </AuthProvider>
+      </body>
+    </html>
+  )

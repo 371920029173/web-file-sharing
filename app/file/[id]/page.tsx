@@ -725,3 +725,105 @@ export default function FileDetailPage() {
     </div>
   )
 }
+        <div className="card mb-8">
+          <div className="flex items-start space-x-4">
+            {getFileTypeIcon(file.file_type)}
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{file.name}</h1>
+              <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
+                <div className="flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>{file.author_name}</span>
+                </div>
+                <div className="flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>{formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN })}</span>
+                </div>
+                <div className="flex items-center">
+                  <Eye className="w-4 h-4 mr-2" />
+                  <span>{file.likes_count} 次查看</span>
+                </div>
+              </div>
+              {file.description && (
+                <p className="text-gray-700 mb-4">{file.description}</p>
+              )}
+              <div className="flex items-center space-x-4">
+                <button className="btn-primary flex items-center">
+                  <Download className="w-4 h-4 mr-2" />
+                  下载文件
+                </button>
+                <button className="btn-secondary flex items-center">
+                  <Heart className="w-4 h-4 mr-2" />
+                  收藏
+                </button>
+              </div>
+            </div>
+            <div className="text-right text-sm text-gray-500">
+              <div>文件大小</div>
+              <div className="font-medium">{formatFileSize(file.file_size)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 文件内容 */}
+        <div className="card mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">文件内容</h2>
+          {renderFileContent()}
+        </div>
+
+        {/* 评论区 */}
+        <div className="card">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            评论 ({comments.length})
+          </h2>
+          
+          {/* 发表评论 */}
+          <form onSubmit={handleSubmitComment} className="mb-6">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="写下你的评论..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              rows={3}
+            />
+            <div className="mt-2 flex justify-end">
+              <button
+                type="submit"
+                disabled={submitting || !newComment.trim()}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? '发布中...' : '发布评论'}
+              </button>
+            </div>
+          </form>
+
+          {/* 评论列表 */}
+          <div className="space-y-4">
+            {comments.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">暂无评论，快来发表第一条评论吧！</p>
+            ) : (
+              comments.map((comment) => (
+                <div key={comment.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="font-medium text-gray-900">{comment.username}</span>
+                        <span className="text-sm text-gray-500">
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{comment.content}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+} 

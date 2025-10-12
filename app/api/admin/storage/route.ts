@@ -193,3 +193,27 @@ export async function GET(request: NextRequest) {
     )
   }
 } 
+      if (logsError) {
+        console.error('Failed to fetch storage management logs:', logsError)
+      } else {
+        logs = logsData || []
+      }
+    } catch (error) {
+      console.log('Storage management logs table may not exist yet:', error)
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        users,
+        logs: logs
+      }
+    })
+
+  } catch (error: any) {
+    console.error('Get storage info error:', error)
+    return NextResponse.json(
+      { success: false, error: error.message || '获取信息失败' },
+      { status: 500 }
+    )
+  }
