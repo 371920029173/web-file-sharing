@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/providers/AuthProvider'
+import { UiProvider } from '@/components/providers/UiProvider'
 import MouseTrail from '@/components/effects/MouseTrail'
 import ParticlePhysics from '@/components/effects/ParticlePhysics'
 
@@ -36,8 +37,10 @@ export default function RootLayout({
         <MouseTrail />
         
         <AuthProvider>
-          {children}
-          <Toaster position="top-right" />
+          <UiProvider>
+            {children}
+            <Toaster position="top-right" />
+          </UiProvider>
         </AuthProvider>
       </body>
     </html>

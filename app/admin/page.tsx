@@ -33,6 +33,8 @@ export default function AdminPage() {
   const [files, setFiles] = useState<FileItem[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
+  const [avatarRequests, setAvatarRequests] = useState<any[]>([])
+  const [adminChangeRequests, setAdminChangeRequests] = useState<any[]>([])
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
@@ -79,10 +81,12 @@ export default function AdminPage() {
       
       if (user?.is_admin) {
         // 管理员可以查看所有数据 - 使用API路由绕过RLS
-        const [usersResponse, filesData, announcementsData] = await Promise.all([
+        const [usersResponse, filesData, announcementsData, avatarReq, adminReq] = await Promise.all([
           fetch(`/api/admin/users?adminId=${user.id}`),
           supabase.from('files').select('*').order('created_at', { ascending: false }),
-          supabase.from('announcements').select('*').order('created_at', { ascending: false })
+          supabase.from('announcements').select('*').order('created_at', { ascending: false }),
+          supabase.from('avatar_change_requests').select('*').order('created_at', { ascending: false }),
+          supabase.from('admin_change_requests').select('*').order('created_at', { ascending: false })
         ])
         
         const usersResult = await usersResponse.json()
@@ -91,6 +95,8 @@ export default function AdminPage() {
         setUsers(usersData.data || [])
         setFiles(filesData.data || [])
         setAnnouncements(announcementsData.data || [])
+        setAvatarRequests(avatarReq.data || [])
+        setAdminChangeRequests(adminReq.data || [])
         
         // 调试信息
         console.log('管理后台获取的文件:', filesData.data)
@@ -103,12 +109,53 @@ export default function AdminPage() {
           .order('created_at', { ascending: false })
         
         setFiles(filesData || [])
+        const { data: avatarReq } = await supabase
+          .from('avatar_change_requests').select('*').order('created_at', { ascending: false })
+        setAvatarRequests(avatarReq || [])
       }
     } catch (error) {
       console.error('Error fetching data:', error)
       toast.error('数据加载失败')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAvatarReview = async (id: string, approve: boolean) => {
+    try {
+      const response = await fetch('/api/profile/avatar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, approve })
+      })
+      const res = await response.json()
+      if (res.success) {
+        toast.success(approve ? '头像已通过' : '头像已拒绝')
+        fetchData()
+      } else {
+        toast.error(res.error || '操作失败')
+      }
+    } catch (e) {
+      toast.error('操作失败')
+    }
+  }
+
+  const handleAdminChangeApprove = async (id: string, approve: boolean) => {
+    try {
+      const response = await fetch('/api/admin/change-role', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, approve })
+      })
+      const res = await response.json()
+      if (res.success) {
+        toast.success(approve ? '已批准' : '已拒绝')
+        fetchData()
+      } else {
+        toast.error(res.error || '操作失败')
+      }
+    } catch (e) {
+      toast.error('操作失败')
     }
   }
 
@@ -299,6 +346,32 @@ export default function AdminPage() {
                 存储管理
               </button>
             )}
+            {/* 新增：头像审核 */}
+            {(user.is_admin || user.is_moderator) && (
+              <button
+                onClick={() => setActiveTab('avatar')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'avatar'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                头像审核
+              </button>
+            )}
+            {/* 新增：管理员变更审批（仅超管） */}
+            {user.username === '371920029173' && (
+              <button
+                onClick={() => setActiveTab('admin-requests')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'admin-requests'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                管理员变更审批
+              </button>
+            )}
           </nav>
         </div>
 
@@ -420,6 +493,65 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* 头像审核面板 */}
+        {activeTab === 'avatar' && (
+          <div className="card">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">头像审核</h2>
+            <div className="space-y-4">
+              {avatarRequests.map((req) => (
+                <div key={req.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">用户ID：{req.user_id}</p>
+                    <p className="text-sm text-gray-500">状态：{req.status}</p>
+                    <img src={req.new_avatar_url} alt="avatar" className="w-12 h-12 rounded-full mt-2" />
+                  </div>
+                  {req.status === 'pending' && (
+                    <div className="flex space-x-2">
+                      <button onClick={() => handleAvatarReview(req.id, true)} className="btn-primary flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-1" /> 通过
+                      </button>
+                      <button onClick={() => handleAvatarReview(req.id, false)} className="btn-secondary flex items-center">
+                        <XCircle className="w-4 h-4 mr-1" /> 拒绝
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {avatarRequests.length === 0 && <p className="text-center text-gray-500 py-8">暂无头像申请</p>}
+            </div>
+          </div>
+        )}
+
+        {/* 管理员变更审批面板（仅超管） */}
+        {activeTab === 'admin-requests' && user.username === '371920029173' && (
+          <div className="card">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">管理员变更审批</h2>
+            <div className="space-y-4">
+              {adminChangeRequests.map((req) => (
+                <div key={req.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">申请人：{req.requester_id}</p>
+                    <p className="text-sm text-gray-700">目标用户：{req.target_user_id}</p>
+                    <p className="text-sm text-gray-700">操作：{req.action}</p>
+                    <p className="text-sm text-gray-500">状态：{req.status}</p>
+                  </div>
+                  {req.status === 'pending' && (
+                    <div className="flex space-x-2">
+                      <button onClick={() => handleAdminChangeApprove(req.id, true)} className="btn-primary flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-1" /> 批准
+                      </button>
+                      <button onClick={() => handleAdminChangeApprove(req.id, false)} className="btn-secondary flex items-center">
+                        <XCircle className="w-4 h-4 mr-1" /> 拒绝
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {adminChangeRequests.length === 0 && <p className="text-center text-gray-500 py-8">暂无管理员变更申请</p>}
             </div>
           </div>
         )}

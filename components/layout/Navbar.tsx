@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useUi } from '@/components/providers/UiProvider'
 import { 
   Home, 
   User, 
@@ -28,6 +29,7 @@ interface Notifications {
 
 export default function Navbar() {
   const { user, signOut } = useAuth()
+  const { uiMode, toggleUiMode } = useUi()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notifications>({
     messages: 0,
@@ -93,6 +95,13 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
+            <button
+              onClick={toggleUiMode}
+              className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              title={uiMode === 'desktop' ? '切换到手机版布局' : '切换到电脑版布局'}
+            >
+              {uiMode === 'desktop' ? '电脑版' : '手机版'}
+            </button>
             <Link href="/" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="首页">
               <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
