@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 用户提交头像更换申请
 export async function POST(request: NextRequest) {
@@ -15,7 +16,8 @@ export async function POST(request: NextRequest) {
     const { new_avatar_url } = await request.json()
     if (!new_avatar_url) return NextResponse.json({ success: false, error: '缺少头像地址' }, { status: 400 })
 
-    const { data, error } = await supabase.from('avatar_change_requests').insert({
+    // 使用服务端凭据写入，绕过 RLS（仍然校验身份）
+    const { data, error } = await supabaseAdmin.from('avatar_change_requests').insert({
       user_id: user.id,
       new_avatar_url,
       status: 'pending'
@@ -42,14 +44,14 @@ export async function PUT(request: NextRequest) {
     if (!id) return NextResponse.json({ success: false, error: '缺少请求ID' }, { status: 400 })
 
     const status = approve ? 'approved' : 'rejected'
-    const { data: updated, error } = await supabase.from('avatar_change_requests')
+    const { data: updated, error } = await supabaseAdmin.from('avatar_change_requests')
       .update({ status, reviewer_id: user.id, reason, reviewed_at: new Date().toISOString() })
       .eq('id', id).select('*').single()
 
     if (error) throw error
 
     if (status === 'approved') {
-      await supabase.from('users').update({ avatar_url: updated.new_avatar_url }).eq('id', updated.user_id)
+      await supabaseAdmin.from('users').update({ avatar_url: updated.new_avatar_url }).eq('id', updated.user_id)
     }
 
     return NextResponse.json({ success: true, data: updated })
