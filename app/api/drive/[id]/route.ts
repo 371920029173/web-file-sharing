@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 删除/重命名/获取签名链接
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })
@@ -22,7 +22,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: any) {
   try {
     const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })
@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: any) {
   try {
     const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })

@@ -114,3 +114,101 @@ FEATURE_MODERATION=true
    - 定期备份 Supabase 数据
    - 保存重要配置文件
    - 维护部署历史记录
+#### 文件上传配置
+```
+MAX_FILE_SIZE=104857600
+UPLOAD_RATE_LIMIT=10
+UPLOAD_RATE_LIMIT_WINDOW=60000
+MAX_FILES_PER_USER=1000
+ALLOWED_FILE_TYPES=image,video,audio,document,archive,code
+```
+
+#### 速率限制
+```
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=100
+```
+
+#### 生产环境配置
+```
+NODE_ENV=production
+DEBUG=false
+LOG_LEVEL=warn
+LOG_FORMAT=json
+```
+
+### 第四步：部署
+1. 点击 "Deploy"
+2. 等待构建完成
+3. 获得你的Vercel域名
+
+## 🔧 部署后配置
+
+### 1. 自定义域名（可选）
+- 在Vercel项目设置中添加自定义域名
+- 更新DNS记录指向Vercel
+
+### 2. 环境变量更新
+- 如果修改了环境变量，需要重新部署
+- 或者使用Vercel CLI进行更新
+
+### 3. 监控和日志
+- 在Vercel Dashboard中查看部署状态
+- 检查Function Logs和Build Logs
+
+## 🧪 部署后测试
+
+### 1. 基本功能测试
+- 访问你的Vercel域名
+- 测试用户注册和登录
+- 测试文件上传功能
+- 测试管理员后台
+
+### 2. 硬编码管理员账户测试
+- 用户名：`371920029173`
+- 密码：`371920029173Abcd`
+- 确认管理员权限正常
+
+### 3. API测试
+- 测试文件上传API
+- 测试用户管理API
+- 检查错误日志
+
+## 🚨 常见问题
+
+### 构建失败
+- 检查环境变量是否正确
+- 查看Build Logs中的错误信息
+- 确保所有依赖都已安装
+
+### 运行时错误
+- 检查Function Logs
+- 确认Supabase连接正常
+- 验证环境变量在生产环境中可用
+
+### 环境变量问题
+- 确保所有必需变量都已设置
+- 检查变量名拼写是否正确
+- 确认变量值没有多余的空格
+
+## 🎉 部署成功标志
+
+当你看到：
+- ✅ Vercel构建成功
+- ✅ 网站能正常访问
+- ✅ 用户注册和登录功能正常
+- ✅ 文件上传功能正常
+- ✅ 管理员后台正常
+
+就说明部署成功了！
+
+## 📞 需要帮助？
+
+如果部署过程中遇到问题：
+1. 检查Vercel Build Logs
+2. 检查Function Logs
+3. 确认环境变量配置
+4. 查看Supabase连接状态
+
+现在去Vercel部署吧！🚀 
