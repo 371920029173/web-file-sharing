@@ -1,0 +1,11 @@
+name = "web-file-sharing"
+compatibility_date = "2024-05-01"
+
+[pages]
+# next-on-pages 输出的静态目录
+build_output_dir = ".vercel/output/static"
+
+[vars]
+# 在 Cloudflare Pages 控制台填充实际值。这里仅占位，避免意外暴露。
+NODE_ENV = "production"
+
