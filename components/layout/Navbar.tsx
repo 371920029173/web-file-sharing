@@ -197,6 +197,17 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
+              {/* UI 切换开关（移动端）*/}
+              <button
+                onClick={() => {
+                  toggleUiMode()
+                  setIsMenuOpen(false)
+                }}
+                className="w-full mb-2 text-left px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors border border-gray-200 rounded"
+                title={uiMode === 'desktop' ? '切换到手机版布局' : '切换到电脑版布局'}
+              >
+                {uiMode === 'desktop' ? '切换到手机版布局' : '切换到电脑版布局'}
+              </button>
               <Link 
                 href="/" 
                 className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"

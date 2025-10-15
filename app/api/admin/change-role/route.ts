@@ -10,12 +10,12 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) return NextResponse.json({ success: false, error: '认证失败' }, { status: 401 })
 
-    const { target_user_id, action, reason } = await request.json()
-    if (!target_user_id || !action) return NextResponse.json({ success: false, error: '缺少参数' }, { status: 400 })
+    const { requesterId, targetUserId, action, reason } = await request.json()
+    if (!targetUserId || !action) return NextResponse.json({ success: false, error: '缺少参数' }, { status: 400 })
 
     const { data, error } = await supabase.from('admin_change_requests').insert({
-      requester_id: user.id,
-      target_user_id,
+      requester_id: requesterId || user.id,
+      target_user_id: targetUserId,
       action,
       status: 'pending',
       reason
@@ -51,9 +51,9 @@ export async function PUT(request: NextRequest) {
     if (error) throw error
 
     if (status === 'approved') {
-      if (updated.action === 'promote') {
+      if (updated.action === 'grant_admin') {
         await supabase.from('users').update({ is_admin: true }).eq('id', updated.target_user_id)
-      } else if (updated.action === 'demote') {
+      } else if (updated.action === 'revoke_admin') {
         await supabase.from('users').update({ is_admin: false }).eq('id', updated.target_user_id)
       }
     }

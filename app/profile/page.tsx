@@ -12,7 +12,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [editedUser, setEditedUser] = useState<any>(null)
 
-  const [avatarUrl, setAvatarUrl] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [submittingAvatar, setSubmittingAvatar] = useState(false)
 
@@ -60,6 +59,11 @@ export default function ProfilePage() {
 
   const submitAvatarRequest = async () => {
     if (!user) return
+    if (!avatarFile) {
+      toast.error('请先选择图片文件')
+      return
+    }
+    
     try {
       setSubmittingAvatar(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -68,24 +72,16 @@ export default function ProfilePage() {
         return
       }
 
-      let finalUrl = avatarUrl
-      if (avatarFile) {
-        const bucket = 'avatars'
-        const ext = avatarFile.name.split('.').pop() || 'png'
-        const path = `${user.id}/${Date.now()}.${ext}`
-        const { data: uploadRes, error: uploadErr } = await supabase.storage.from(bucket).upload(path, avatarFile, { upsert: false, cacheControl: '3600' })
-        if (uploadErr) {
-          toast.error('上传失败：' + uploadErr.message)
-          return
-        }
-        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(uploadRes.path)
-        finalUrl = publicUrl.publicUrl
-      }
-
-      if (!finalUrl) {
-        toast.error('请先选择图片或填写图片URL')
+      const bucket = 'avatars'
+      const ext = avatarFile.name.split('.').pop() || 'png'
+      const path = `${user.id}/${Date.now()}.${ext}`
+      const { data: uploadRes, error: uploadErr } = await supabase.storage.from(bucket).upload(path, avatarFile, { upsert: false, cacheControl: '3600' })
+      if (uploadErr) {
+        toast.error('上传失败：' + uploadErr.message)
         return
       }
+      const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(uploadRes.path)
+      const finalUrl = publicUrl.publicUrl
 
       const res = await fetch('/api/profile/avatar', {
         method: 'POST',
@@ -98,7 +94,6 @@ export default function ProfilePage() {
       const json = await res.json()
       if (json.success) {
         toast.success('已提交头像审核')
-        setAvatarUrl('')
         setAvatarFile(null)
       } else {
         toast.error(json.error || '提交失败')
@@ -183,10 +178,11 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="或粘贴图片URL，例如 https://.../avatar.png" className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <button disabled={submittingAvatar} onClick={submitAvatarRequest} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">{submittingAvatar ? '提交中…' : '提交审核'}</button>
+                  <button disabled={submittingAvatar || !avatarFile} onClick={submitAvatarRequest} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {submittingAvatar ? '提交中…' : '提交审核'}
+                  </button>
                 </div>
-                <p className="text-xs text-gray-500">支持直接上传或填写图片 URL。提交后由审核员审批。</p>
+                <p className="text-xs text-gray-500">请选择图片文件上传。提交后由审核员审批。</p>
               </div>
             </div>
           </div>

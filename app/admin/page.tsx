@@ -123,15 +123,24 @@ export default function AdminPage() {
 
   const handleAvatarReview = async (id: string, approve: boolean) => {
     try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token
       const response = await fetch('/api/profile/avatar', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ id, approve })
       })
       const res = await response.json()
       if (res.success) {
         toast.success(approve ? '头像已通过' : '头像已拒绝')
+        // 刷新数据，包括头像申请列表
         fetchData()
+        // 如果是通过，刷新当前用户信息以更新头像显示
+        if (approve) {
+          // 延迟一下再刷新，确保数据库更新完成
+          setTimeout(() => {
+            window.location.reload()
+          }, 1000)
+        }
       } else {
         toast.error(res.error || '操作失败')
       }
@@ -162,6 +171,38 @@ export default function AdminPage() {
   const handleUserRoleChange = async (userId: string, field: 'is_admin' | 'is_moderator', value: boolean) => {
     if (!user?.is_admin) return
     
+    // 如果是修改管理员身份，且当前用户不是超级管理员，需要发送申请
+    if (field === 'is_admin' && user.username !== '371920029173') {
+      try {
+        const response = await fetch('/api/admin/change-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            requesterId: user.id,
+            targetUserId: userId,
+            action: value ? 'grant_admin' : 'revoke_admin',
+            reason: value ? '申请授予管理员权限' : '申请撤销管理员权限'
+          })
+        })
+
+        const result = await response.json()
+        
+        if (result.success) {
+          toast.success('已提交管理员变更申请，等待超级管理员审批')
+          fetchData()
+        } else {
+          toast.error(result.error || '提交申请失败')
+        }
+      } catch (error) {
+        console.error('Error submitting admin change request:', error)
+        toast.error('提交申请失败')
+      }
+      return
+    }
+    
+    // 超级管理员或修改审核员权限直接执行
     try {
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
@@ -502,26 +543,24 @@ export default function AdminPage() {
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">头像审核</h2>
             <div className="space-y-4">
-              {avatarRequests.map((req) => (
+              {avatarRequests.filter(req => req.status === 'pending').map((req) => (
                 <div key={req.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-700">用户ID：{req.user_id}</p>
                     <p className="text-sm text-gray-500">状态：{req.status}</p>
                     <img src={req.new_avatar_url} alt="avatar" className="w-12 h-12 rounded-full mt-2" />
                   </div>
-                  {req.status === 'pending' && (
-                    <div className="flex space-x-2">
-                      <button onClick={() => handleAvatarReview(req.id, true)} className="btn-primary flex items-center">
-                        <CheckCircle className="w-4 h-4 mr-1" /> 通过
-                      </button>
-                      <button onClick={() => handleAvatarReview(req.id, false)} className="btn-secondary flex items-center">
-                        <XCircle className="w-4 h-4 mr-1" /> 拒绝
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex space-x-2">
+                    <button onClick={() => handleAvatarReview(req.id, true)} className="btn-primary flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-1" /> 通过
+                    </button>
+                    <button onClick={() => handleAvatarReview(req.id, false)} className="btn-secondary flex items-center">
+                      <XCircle className="w-4 h-4 mr-1" /> 拒绝
+                    </button>
+                  </div>
                 </div>
               ))}
-              {avatarRequests.length === 0 && <p className="text-center text-gray-500 py-8">暂无头像申请</p>}
+              {avatarRequests.filter(req => req.status === 'pending').length === 0 && <p className="text-center text-gray-500 py-8">暂无待审核的头像申请</p>}
             </div>
           </div>
         )}
