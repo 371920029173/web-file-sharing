@@ -41,8 +41,9 @@ export async function PATCH(request: NextRequest, { params }: any) {
   }
 }
 
-export async function GET(request: NextRequest, { params }: any) {
+export async function GET(request: NextRequest, context: any) {
   try {
+    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
     const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })
     const token = auth.slice(7)
