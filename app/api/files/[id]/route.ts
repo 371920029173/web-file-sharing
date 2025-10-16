@@ -5,9 +5,10 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 // 删除文件
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
+    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
     const fileId = params.id
     
     // 从请求头获取用户ID
@@ -111,9 +112,10 @@ export async function DELETE(
 // 更新文件信息（重命名等）
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
+    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
     const fileId = params.id
     const body = await request.json()
     
@@ -182,9 +184,10 @@ export async function PATCH(
 // 下载文件
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
+    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
     const fileId = params.id
     
     // 从请求头获取用户ID
